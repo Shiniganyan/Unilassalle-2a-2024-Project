@@ -1,0 +1,124 @@
+# Our project consisted in studying the differences between cattle farming and the farming of other animals, by comparing the LUs provided in the FADN as well as total animal production. We also wanted to see whether there was a link between cattle LUs and areas with environmental constraints, or between debts and cattle farming. 
+
+
+
+# Even before we could use our dataset in R, we started by filtering the Excel table containing the 72 columns and 7223 rows, to keep only the data we needed. We then used part of this new table, already filtered the first time, and cleaned it up to use it in all our tests and to generate our statistics. 
+
+
+
+# To use the RICA, I used the import database button directly, instead of going through the Url. However, here are the functions that would normally allow you to obtain the same result with lines of R code:
+url = "C:/Users/33695/Downloads/RICA_isafe_students_vf.xlsx"
+library(readxl)
+RICA_isafe_students_vf <- read_excel(url)
+View(RICA_isafe_students_vf)
+
+
+
+# Clean up the RICA to obtain datasets that suit us :
+New_RICA_clean_Dettes <- na.omit(New_RICA[, c("UGBBO", "UGBCA", "UGBOV", "UGBPO", "TDTE3")])
+New_RICA_clean <- na.omit(New_RICA[, c("RATIOBO", "RATIOCA", "RATIOOV", "RATIOPO")])
+# I had tried to test the number of unassigned values in the basic RICA cleanup: 
+print(apply(New_RICA_clean_Dettes[, c("TDTE3")], 2, function(x) sum(is.na(x))))
+
+
+
+#Boxplot for the different UGB farms :
+categories = c("UGBBO", "UGBCA", "UGBOV", "UGBPO")
+boxplot(New_RICA$UGBBO,New_RICA$UGBCA, New_RICA$UGBOV, New_RICA$UGBPO,
+        main = "Statistical comparison of each relevant UGB",
+        xlab = "UGBs",  # Nom de l'axe x
+        ylab = "UGB number",  # Nom de l'axe y
+        names = categories)
+
+
+
+#Pie chart of the distribution of livestock units, or RATIO is PRODA/UGB:
+UGBBO = sum(New_RICA_clean$RATIOBO)
+UGBCA = sum(New_RICA_clean$RATIOCA)
+UGBOV = sum(New_RICA_clean$RATIOOV)
+UGBPO = sum(New_RICA_clean$RATIOPO)
+proportions_ = c(UGBBO, UGBCA, UGBOV, UGBPO)
+noms = c("UGBBO", "UGBCA", "UGBOV", "UGBPO")
+pie(proportions_, labels = noms, main = "Repartition of each UGB production")
+
+
+
+# Bar plot showing differences in animal production according to the different UGBs
+categories = c("Bovins", "Caprins", "Ovins", "Porcins")
+body = c(sum(New_RICA_clean$RATIOBO), sum(New_RICA_clean$RATIOCA), sum(New_RICA_clean$RATIOOV), sum(New_RICA_clean$RATIOPO))
+barplot(body, main = "Bar plot showing the production difference between the different UGB", names.arg = categories)
+
+
+
+# Scatter plot and linear correlation between debts and UGBbovines :
+x <- c(New_RICA_clean_Dettes$UGBBO)
+y <- c(New_RICA_clean_Dettes$TDTE3)
+plot(x, y, main = "Repartition of the debts in function of UGBBO", 
+     xlab = "UGBBO", ylab = "Debts")
+model <- lm(y ~ x)
+abline(model, col = "red")
+
+
+
+#Comparison of debts between cattle and herbivore UGBs : 
+correlation_col1_col3 = cor(RICA_Data_CSV$UGBBO, RICA_Data_CSV$TDTE3)
+correlation_col2_col3 = cor(RICA_Data_CSV$UGBHE, RICA_Data_CSV$TDTE3)
+if (correlation_col1_col3 > correlation_col2_col3) {
+  print("La colonne RICA_Data_CSV$UGBBO est plus importante que RICA_Data-CSV$UGBHE par rapport à RICA_Data_CSV$TDTE3")
+} else if (correlation_col1_col3 < correlation_col2_col3) {
+  print("La colonne RICA_Data_CSV$UGBHE est plus importante que RICA_Data_CSV$UGBBO par rapport à RICA_Data_CSV$TDTE3.")
+} else {
+  print("Les deux colonnes ont une corrélation égale par rapport à RICA_Data_CSV$TDTE3.")
+}
+
+
+
+# Chisq test (independence) between UGBBOs and areas with environmental constraints: 
+chisq.test(RICA_Data_CSV$UGBBO, RICA_Data_CSV$ZENVI)
+chisq.test(RICA_Data_CSV$UGBOV, RICA_Data_CSV$ZENVI)
+chisq.test(RICA_Data_CSV$UGBCA, RICA_Data_CSV$ZENVI)
+chisq.test(RICA_Data_CSV$UGBPO, RICA_Data_CSV$ZENVI)
+chisq.test(RICA_Data_CSV$UGBHE, RICA_Data_CSV$ZENVI)
+
+
+
+# Normality test : 
+shapiro.test(New_RICA_clean_Dettes$UGBBO)
+shapiro.test(New_RICA_clean_Dettes$UGBCA)
+shapiro.test(New_RICA_clean_Dettes$UGBOV)
+shapiro.test(New_RICA_clean_Dettes$UGBPO)
+shapiro.test(New_RICA_clean_Dettes$UGBHE)
+
+
+
+# Fischer tests / variance tests :
+var.test(New_RICA_clean_Dettes$UGBBO, New_RICA_clean_Dettes$UGBHE)
+var.test(New_RICA_clean_Dettes$UGBOV, New_RICA_clean_Dettes$UGBHE)
+
+
+
+# Even if the Shapiro results did not indicate data normality, we assigned a t-test for information purposes: 
+t.test(New_RICA$UGBBO)
+t.test(New_RICA$UGBCA)
+t.test(New_RICA$UGBOV)
+t.test(New_RICA$UGBPO)
+t.test(New_RICA$UGBHE)
+
+
+
+#Next, to obtain a test compatible with the absence of data normality, we perform a Wilcoxon test:
+wilcox.test(New_RICA$UGBOV)
+wilcox.test(New_RICA$UGBBO)
+wilcox.test(New_RICA$UGBCA)
+wilcox.test(New_RICA$UGBPO)
+wilcox.test(New_RICA$UGBHE)
+
+
+
+
+
+
+
+
+
+
